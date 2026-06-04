@@ -55,6 +55,7 @@ bool NeuralNetwork::contribute(double y, double p) {
 
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     visitContributeStart(nodeId); 
+
     if (contributions.count(nodeId)) return contributions.at(nodeId); 
 
     double outgoingContribution = 0;
@@ -70,6 +71,7 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
+    
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
 }
