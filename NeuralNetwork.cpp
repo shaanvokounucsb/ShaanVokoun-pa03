@@ -98,25 +98,27 @@ bool NeuralNetwork::contribute(double y, double p) {
 }
 // STUDENT TODO: IMPLEMENT
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
-    visitContributeStart(nodeId);
-    
+    visitContributeStart(nodeId); 
     if (contributions.count(nodeId)) {
         return contributions.at(nodeId); 
     }
 
     double outgoingContribution = 0;
+
     if (adjacencyList.at(nodeId).empty()) {
         outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
-    } else {
+    } 
+
+    else {
         for (auto& [destId, conn] : adjacencyList.at(nodeId)) {
             double incoming = contribute(destId, y, p);
             visitContributeNeighbor(conn, incoming, outgoingContribution);
         }
     }
-    
+
+
     visitContributeNode(nodeId, outgoingContribution);
     contributions[nodeId] = outgoingContribution;
-
     return outgoingContribution;
 
 }
@@ -400,22 +402,16 @@ double NeuralNetwork::assess(string filename) {
 
 double NeuralNetwork::assess(DataLoader dl) {
     bool stateBefore = evaluating;
-    evaluating = true;
+    evaluating = true; // Required for testing mode
     double count(0);
     double correct(0);
-    vector<double> output;
     for (int i = 0; i < dl.getData().size(); i++) {
         DataInstance di = dl.getData().at(i);
-        output = predict(di);
+        vector<double> output = predict(di);
         if (static_cast<int>(round(output.at(0))) == di.y) {
             correct++;
         }
         count++;
-    }
-
-    if (dl.getData().empty()) {
-        cerr << "Cannot assess accuracy on an empty dataset" << endl;
-        exit(1);
     }
     evaluating = stateBefore;
     return correct / count;
