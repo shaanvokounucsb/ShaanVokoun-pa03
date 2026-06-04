@@ -55,31 +55,38 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
         return vector<double>();
     }
 
+    for (size_t i = 0; i < inputNodeIds.size(); ++i){
+        nodes.at(inputNodeIds.at(i))->postActivationValue = input.at(i);
+    }
+
     // BFT implementation goes here.
     // Note: before traversal begins, each input value in `input` must be loaded into
     // the corresponding input node's postActivationValue. Input nodes are not activated —
     // their value is passed forward directly.
     // Use visitPredictNode and visitPredictNeighbor to handle the neural network math
     // at each step of your traversal.
-
-    vector<double> output;
-    for (int i = 0; i < outputNodeIds.size(); i++) {
-        int dest = outputNodeIds.at(i);
-        NodeInfo* outputNode = nodes.at(dest);
-        output.push_back(outputNode->postActivationValue);
+    for (size_t i = 1; i < layers.size(); ++i) {
+        for (int nodes: layers.at(i)) {
+            for (auto const& [source, conn]: getIncomingConnections(nodeId)){
+                visitPredictNeighbor(conn);
+            }
+            visitPredictNode(nodeId);
+        }
     }
-
+    
+    vector<double> output;
+    for (int dest : outputNodeIds) {
+        output.push_back(nodes.at(dest)->postActivationValue);
+    }
     if (evaluating) {
         flush();
     } else {
-        // increment batch size
         batchSize++;
-        // accumulate derivatives. If in training mode, weights and biases get accumulated
         contribute(instance.y, output.at(0));
     }
+
     return output;
 }
-// STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::contribute(double y, double p) {
 
     // DFT implementation goes here.
@@ -89,9 +96,16 @@ bool NeuralNetwork::contribute(double y, double p) {
     // should not be called on them.
     // The contributions map acts as your "visited" set and also stores each node's
     // computed contribution so it is not recomputed if reached by multiple paths.
+    
+    contributions.clear();
 
-
-    flush();
+    // 2. Initiate the recursive backward pass
+    // We start from the output nodes. Since this is a recursive DFT, 
+    // calling this on the output nodes will trigger calls to their 
+    // predecessors in the network.
+    for (int nodeId : outputNodeIds) {
+        contribute(nodeId, y, p);
+    }
 
     return true;
 }
@@ -99,6 +113,9 @@ bool NeuralNetwork::contribute(double y, double p) {
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     visitContributeStart(nodeId); // don't remove this line, used for visualization
     // incomingContribution: the error signal returned by a recursive call on a neighbor.
+    if (contributions.count(nodeId) {
+        contributions.at(nodeId);
+    }
     double incomingContribution = 0;
     // outgoingContribution: built up from this node's neighbors, then scaled by
     // this node's activation derivative before being returned to the previous layer.
@@ -113,27 +130,44 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         // You do not need to understand this derivation.
         outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
     }
+    else {
+        // Recursive step: propagate error backward through neighbors
+        for (auto const& [destId, conn] : adjacencyList.at(nodeId)) {
+            // Recursively get the contribution from the neighbor
+            incomingContribution = contribute(destId, y, p);
+            
+            // Accumulate weight/node gradients using the helper
+            visitContributeNeighbor(const_cast<Connection&>(conn), incomingContribution, outgoingContribution);
+        }
+    }
 
-    // Before returning, store outgoingContribution in the contributions map.
+    visitContributeNode(nodeId, outgoingContribution);
+
+    contributions[nodeId] = outgoingContribution;
 
     return outgoingContribution;
+
 }
 // STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::update() {
-    // apply the derivative contributions
+    for (int i = 0; i < nodes.size(); i++) {
+        NodeInfo* node = nodes.at(i);
+        node->bias -= (learningRate * node->delta);
+        
 
-    // traverse the graph in anyway you want. 
-    // Each node has a delta term 
-    // Each connection has a delta term
+        node->delta = 0;
+    }
 
-    // use the formulas for each update
-    // bias update: bias = bias - (learningRate * delta)
-    // weight update: weight = weight - (learningRate * delta)
-    // reset the delta term for each node and connection to zero.
-    
+    for (int i = 0; i < nodes.size(); i++) {
+        for (auto& [destId, conn] : adjacencyList.at(i)) {
+
+            conn.weight -= (learningRate * conn.delta);
+        
+            conn.delta = 0;
+        }
+    }
     flush();
     return true;
-    
 }
 
 
