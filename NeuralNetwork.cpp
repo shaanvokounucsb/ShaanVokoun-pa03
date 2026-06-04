@@ -11,6 +11,7 @@ vector<int> NeuralNetwork::getInputNodeIds() const { return inputNodeIds; }
 vector<int> NeuralNetwork::getOutputNodeIds() const { return outputNodeIds; }
 
 vector<double> NeuralNetwork::predict(DataInstance instance) {
+
     if (instance.x.size() != inputNodeIds.size()) return vector<double>();
 
     for (size_t i = 0; i < inputNodeIds.size(); ++i) {
@@ -21,7 +22,7 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
         for (int vId : layer) {
             bool isInput = false;
             for(int id : inputNodeIds) if(id == vId) isInput = true;
-            
+
             if (!isInput) {
                 visitPredictNode(vId); 
             }
@@ -30,10 +31,13 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
             }
         }
     }
+
     vector<double> output;
     for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
+
+
     if (evaluating) {
-        flush();
+        flush(); 
     } else { 
         batchSize++; 
         contribute(instance.y, output.at(0)); 
@@ -284,7 +288,10 @@ void NeuralNetwork::visitContributeNode(int vId, double& outgoingContribution) {
 //      (how much should this weight change? proportional to incomingContribution * this node's output)
 void NeuralNetwork::visitContributeNeighbor(Connection& c, double& incomingContribution, double& outgoingContribution) {
     NodeInfo* v = nodes.at(c.source);
-
+    
+    if (v->postActivationValue == 0) {
+        std::cerr << "CRITICAL: Node " << c.source << " has 0 postActivationValue!" << std::endl;
+    }
     outgoingContribution += c.weight * incomingContribution;
 
     c.delta += incomingContribution * v->postActivationValue;
