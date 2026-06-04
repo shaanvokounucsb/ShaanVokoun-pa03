@@ -271,17 +271,8 @@ void NeuralNetwork::visitContributeNode(int vId, double& outgoingContribution) {
     NodeInfo* v = nodes.at(vId);
     outgoingContribution *= v->derive();
 
-    //contribute bias derivative
+
     v->delta += outgoingContribution;
-    // visualization use
-    if (viz::isTracing()) {
-        viz::traceNodeState(0, "backward", vId,
-                            v->preActivationValue,
-                            v->postActivationValue,
-                            v->bias,
-                            v->delta,
-                            "current");
-    }
 }
 
 // visitContributeNeighbor: called for each outgoing connection during DFT, before visitContributeNode.
@@ -293,25 +284,10 @@ void NeuralNetwork::visitContributeNode(int vId, double& outgoingContribution) {
 //      (how much should this weight change? proportional to incomingContribution * this node's output)
 void NeuralNetwork::visitContributeNeighbor(Connection& c, double& incomingContribution, double& outgoingContribution) {
     NodeInfo* v = nodes.at(c.source);
-    // update outgoingContribution
+
     outgoingContribution += c.weight * incomingContribution;
 
-    // accumulate weight derivative
     c.delta += incomingContribution * v->postActivationValue;
-    // visualization use
-    if (viz::isTracing()) {
-        viz::traceEdgeState(0, "backward",
-                            c.source,
-                            c.dest,
-                            c.weight,
-                            c.delta);
-        viz::traceNodeState(0, "backward", c.source,
-                            v->preActivationValue,
-                            v->postActivationValue,
-                            v->bias,
-                            v->delta,
-                            "neighbor");
-    }
 }
 
 void NeuralNetwork::flush() {
