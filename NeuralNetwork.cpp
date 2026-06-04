@@ -13,23 +13,31 @@ vector<int> NeuralNetwork::getOutputNodeIds() const { return outputNodeIds; }
 vector<double> NeuralNetwork::predict(DataInstance instance) {
     if (instance.x.size() != inputNodeIds.size()) return vector<double>();
 
-    for (size_t i = 0; i < inputNodeIds.size(); ++i) 
+    for (size_t i = 0; i < inputNodeIds.size(); ++i) {
         nodes.at(inputNodeIds.at(i))->postActivationValue = instance.x.at(i);
+    }
 
-    // Layer-based BFT
     for (const auto& layer : layers) {
         for (int vId : layer) {
-            visitPredictNode(vId);
+            bool isInput = false;
+            for(int id : inputNodeIds) if(id == vId) isInput = true;
+            
+            if (!isInput) {
+                visitPredictNode(vId); 
+            }
             for (auto const& [destId, conn] : adjacencyList.at(vId)) {
-                visitPredictNeighbor(conn);
+                visitPredictNeighbor(conn); 
             }
         }
     }
     vector<double> output;
     for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
-
-    if (evaluating) flush();
-    else { batchSize++; contribute(instance.y, output.at(0)); }
+    if (evaluating) {
+        flush();
+    } else { 
+        batchSize++; 
+        contribute(instance.y, output.at(0)); 
+    
     return output;
 }
 
