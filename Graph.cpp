@@ -99,7 +99,7 @@ void Graph::updateNode(int id, NodeInfo n) {
     if (nodes.at(id) != nullptr) {
         delete nodes.at(id);
     }
-    nodes.at(id) = new NodeInfo n;
+    nodes.at(id) = new NodeInfo(n);
 }
 
 // STUDENT TODO: IMPLEMENT
@@ -119,7 +119,7 @@ void Graph::updateConnection(int v, int u, double w) {
         exit(1);
     }
 
-    adjacencyList.at(v)[u] = Connecton(v, u, w);
+    adjacencyList.at(v)[u] = Connection(v, u, w);
 }
 
 // STUDENT TODO: IMPLEMENT
