@@ -45,18 +45,26 @@ vector<int> NeuralNetwork::getOutputNodeIds() const {
 // STUDENT TODO: IMPLEMENT
 vector<double> NeuralNetwork::predict(DataInstance instance) {
     if (instance.x.size() != inputNodeIds.size()) return vector<double>();
+    
+    // Load input data
     for (size_t i = 0; i < inputNodeIds.size(); ++i) 
         nodes.at(inputNodeIds.at(i))->postActivationValue = instance.x.at(i);
     
     queue<int> q;
     for (int id : inputNodeIds) q.push(id);
     
+    // Use a set to prevent re-queueing nodes in the same pass
+    set<int> visited;
     while (!q.empty()) {
         int vId = q.front(); q.pop();
+        
         visitPredictNode(vId);
         for (auto const& [destId, conn] : adjacencyList.at(vId)) {
             visitPredictNeighbor(conn);
-            q.push(destId); 
+            if (visited.find(destId) == visited.end()) {
+                q.push(destId);
+                visited.insert(destId);
+            }
         }
     }
 
@@ -98,15 +106,13 @@ bool NeuralNetwork::contribute(double y, double p) {
 }
 // STUDENT TODO: IMPLEMENT
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
-
     visitContributeStart(nodeId); 
-
+    
     if (contributions.count(nodeId)) {
         return contributions.at(nodeId); 
     }
 
     double outgoingContribution = 0;
-
     if (adjacencyList.at(nodeId).empty()) {
         outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
     } 
@@ -118,21 +124,25 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
+
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
 }
 // STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::update() {
-    for (auto* node : nodes) {
-        node->bias -= (learningRate * node->delta);
-        node->delta = 0;
-    }
+    // 1. Update all biases
     for (int i = 0; i < nodes.size(); i++) {
+        nodes.at(i)->bias -= (learningRate * nodes.at(i)->delta);
+        nodes.at(i)->delta = 0; 
+    }
+
+    for (int i = 0; i < adjacencyList.size(); i++) {
         for (auto& [destId, conn] : adjacencyList.at(i)) {
             conn.weight -= (learningRate * conn.delta);
-            conn.delta = 0;
+            conn.delta = 0; 
         }
     }
+
     flush();
     return true;
 }
