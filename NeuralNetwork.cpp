@@ -45,34 +45,25 @@ vector<int> NeuralNetwork::getOutputNodeIds() const {
 // STUDENT TODO: IMPLEMENT
 vector<double> NeuralNetwork::predict(DataInstance instance) {
     if (instance.x.size() != inputNodeIds.size()) return vector<double>();
-    
-    // Load input data
-    for (size_t i = 0; i < inputNodeIds.size(); ++i) 
+
+    for (size_t i = 0; i < inputNodeIds.size(); ++i) {
         nodes.at(inputNodeIds.at(i))->postActivationValue = instance.x.at(i);
-    
-    queue<int> q;
-    for (int id : inputNodeIds) q.push(id);
-    
-    // Use a set to prevent re-queueing nodes in the same pass
-    set<int> visited;
-    while (!q.empty()) {
-        int vId = q.front(); q.pop();
-        
-        visitPredictNode(vId);
-        for (auto const& [destId, conn] : adjacencyList.at(vId)) {
-            visitPredictNeighbor(conn);
-            if (visited.find(destId) == visited.end()) {
-                q.push(destId);
-                visited.insert(destId);
+    }
+    for (const auto& layer : layers) {
+        for (int vId : layer) {
+            visitPredictNode(vId);
+            for (auto const& [destId, conn] : adjacencyList.at(vId)) {
+                visitPredictNeighbor(conn);
             }
         }
     }
-
     vector<double> output;
     for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
-
     if (evaluating) flush();
-    else { batchSize++; contribute(instance.y, output.at(0)); }
+    else { 
+        batchSize++; 
+        contribute(instance.y, output.at(0)); 
+    }
     return output;
 
     // BFT implementation goes here.
@@ -107,24 +98,26 @@ bool NeuralNetwork::contribute(double y, double p) {
 // STUDENT TODO: IMPLEMENT
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     visitContributeStart(nodeId); 
-    
     if (contributions.count(nodeId)) {
         return contributions.at(nodeId); 
     }
 
     double outgoingContribution = 0;
-    if (adjacencyList.at(nodeId).empty()) {
-        outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
-    } 
+    bool isOutput = false;
+    for(int id : outputNodeIds) { if(id == nodeId) isOutput = true; }
 
-    else {
+    if (isOutput) {
+        outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
+    } else {
+
         for (auto& [destId, conn] : adjacencyList.at(nodeId)) {
             double incoming = contribute(destId, y, p);
+
             visitContributeNeighbor(conn, incoming, outgoingContribution);
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
-
+    
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
 }
