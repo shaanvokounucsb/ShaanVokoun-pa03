@@ -98,9 +98,11 @@ bool NeuralNetwork::contribute(double y, double p) {
 }
 // STUDENT TODO: IMPLEMENT
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
-    visitContributeStart(nodeId); // don't remove this line, used for visualization
-    // incomingContribution: the error signal returned by a recursive call on a neighbor.
-    if (contributions.count(nodeId)) return contributions.at(nodeId);
+    visitContributeStart(nodeId);
+    
+    if (contributions.count(nodeId)) {
+        return contributions.at(nodeId); 
+    }
 
     double outgoingContribution = 0;
     if (adjacencyList.at(nodeId).empty()) {
@@ -112,11 +114,6 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
-    return contributions[nodeId] = outgoingContribution;
-    }
-
-    visitContributeNode(nodeId, outgoingContribution);
-
     contributions[nodeId] = outgoingContribution;
 
     return outgoingContribution;
