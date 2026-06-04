@@ -91,7 +91,7 @@ std::ostream& operator<<(std::ostream& out, const Connection& c) {
 
 // STUDENT TODO: IMPLEMENT
 void Graph::updateNode(int id, NodeInfo n) {
-    if (/* id is out of bounds — check if id is a valid index into nodes */ true) {
+    if (id < 0 || id >= static_cast<int>(nodes.size())) {
         cout << "Attempting to update node with id: " << id << " but node does not exist" << endl;
         return;
     }
