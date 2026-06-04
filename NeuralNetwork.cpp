@@ -56,7 +56,7 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
         visitPredictNode(vId);
         for (auto const& [destId, conn] : adjacencyList.at(vId)) {
             visitPredictNeighbor(conn);
-            q.push(destId);
+            q.push(destId); 
         }
     }
 
@@ -98,7 +98,9 @@ bool NeuralNetwork::contribute(double y, double p) {
 }
 // STUDENT TODO: IMPLEMENT
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
+
     visitContributeStart(nodeId); 
+
     if (contributions.count(nodeId)) {
         return contributions.at(nodeId); 
     }
@@ -115,12 +117,9 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
             visitContributeNeighbor(conn, incoming, outgoingContribution);
         }
     }
-
-
     visitContributeNode(nodeId, outgoingContribution);
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
-
 }
 // STUDENT TODO: IMPLEMENT
 bool NeuralNetwork::update() {
