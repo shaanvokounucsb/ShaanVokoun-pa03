@@ -54,8 +54,8 @@ bool NeuralNetwork::contribute(double y, double p) {
 }
 
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
-    visitContributeStart(nodeId);
-    if (contributions.count(nodeId)) return contributions.at(nodeId);
+    visitContributeStart(nodeId); 
+    if (contributions.count(nodeId)) return contributions.at(nodeId); 
 
     double outgoingContribution = 0;
     bool isOutput = false;
@@ -67,13 +67,11 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
         for (int i = 0; i < nodes.size(); ++i) {
             if (adjacencyList.at(i).count(nodeId)) {
                 Connection& conn = adjacencyList.at(i).at(nodeId);
-                double incoming = contribute(i, y, p); 
+                double incoming = contribute(i, y, p);
                 visitContributeNeighbor(conn, incoming, outgoingContribution);
             }
         }
     }
-    
-    // 3. Finalize node contribution after all neighbors are processed
     visitContributeNode(nodeId, outgoingContribution);
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
