@@ -11,49 +11,60 @@ vector<int> NeuralNetwork::getInputNodeIds() const { return inputNodeIds; }
 vector<int> NeuralNetwork::getOutputNodeIds() const { return outputNodeIds; }
 
 vector<double> NeuralNetwork::predict(DataInstance instance) {
-    cout << "DEBUG: Predict called. Input size: " << instance.x.size() << " vs expected: " << inputNodeIds.size() << endl;
-
-    if (instance.x.size() != inputNodeIds.size()) {
-        cout << "DEBUG: Input size mismatch, returning empty." << endl;
-        return vector<double>();
-    }
+    if (instance.x.size() != inputNodeIds.size()) return vector<double>();
 
     for (size_t i = 0; i < inputNodeIds.size(); ++i) {
         nodes.at(inputNodeIds.at(i))->postActivationValue = instance.x.at(i);
     }
 
-    cout << "DEBUG: Number of layers to traverse: " << layers.size() << endl;
-    
-    for (const auto& layer : layers) {
+    queue<int> q;
+    vector<int> in_queue;
 
-        for (int vId : layer) {
-            for (auto const& [destId, conn] : adjacencyList.at(vId)) {
-                visitPredictNeighbor(conn); 
+    for (int id : inputNodeIds) {
+        q.push(id);
+        in_queue.push_back(id);
+    }
+
+    while (!q.empty()) {
+        int curr_id = q.front();
+        q.pop();
+
+        bool is_input = false;
+        for (int id : inputNodeIds) {
+            if (id == curr_id) is_input = true;
+        }
+
+        if (!is_input) {
+            visitPredictNode(curr_id);
+        }
+
+        for (auto const& [dest_id, conn] : adjacencyList.at(curr_id)) {
+            visitPredictNeighbor(conn);
+            
+            bool found = false;
+            for (int id : in_queue) {
+                if (id == dest_id) found = true;
             }
-        }
-        bool isInputLayer = false;
-        for(int id : layer) {
-            for(int inputId : inputNodeIds) if(id == inputId) isInputLayer = true;
-        }
-
-        if (!isInputLayer) {
-            for (int vId : layer) {
-                visitPredictNode(vId);
+            
+            if (!found) {
+                in_queue.push_back(dest_id);
+                q.push(dest_id);
             }
         }
     }
 
     vector<double> output;
-    for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
-    
-    cout << "DEBUG: Prediction complete. Output size: " << output.size() << endl;
+    for (int id : outputNodeIds) {
+        output.push_back(nodes.at(id)->postActivationValue);
+    }
 
     if (evaluating) {
-        flush(); 
-    } else { 
-        batchSize++; 
-        contribute(instance.y, output.at(0)); 
+        flush();
+    } else {
+        batchSize++;
+        contribute(instance.y, output.at(0));
     }
+
     return output;
 }
 
