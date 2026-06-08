@@ -10,7 +10,6 @@
 // The NeuralNetwork class inherits from the Graph class, because a NeuralNetwork is a more specific type of Graph!
 // You have not learned about inherited classes yet, but for now, treat the NeuralNetwork class as if it were also of type Graph.
 class NeuralNetwork : public Graph {
-
     public:
 
         // use these constructors for building your neural network manually through code
@@ -63,7 +62,7 @@ class NeuralNetwork : public Graph {
         // TODO: given the neural nets prediction and the ground truth label, it accumulates gradients for weights and biases.
         // each contribution is accumulated in a variable called delta, which resides in every node (for the bias) and every connection (for the weight)
         // This is the entry point: it initiates the recursion from the input layer.
-        bool contribute(double y, double p);
+        void contribute(double target, double output);
         // This is the recursive helper for contribute(double y, double p).
         // It performs the DFT, visiting one node per call and recursing into its neighbors.
         double contribute(int nodeId, const double& y, const double& p);

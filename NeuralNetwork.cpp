@@ -68,14 +68,38 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
     return output;
 }
 
-bool NeuralNetwork::contribute(double y, double p) {
-    contributions.clear();
-    for (int nodeId : outputNodeIds) {
-        contribute(nodeId, y, p);
-    }
-    return true;
-}
+void NeuralNetwork::contribute(double target, double output) {
+    double base_error = output - target;
 
+    for (int out_id : outputNodeIds) {
+        nodes.at(out_id)->delta = base_error;
+    }
+
+    for (int i = nodes.size() - 1; i >= 0; --i) {
+        double out_contrib = 0.0;
+        bool is_output = false;
+        
+        for (int out_id : outputNodeIds) {
+            if (i == out_id) {
+                is_output = true;
+            }
+        }
+
+        if (is_output) {
+            out_contrib = base_error;
+        } else {
+            if (i < adjacencyList.size()) {
+                for (auto& edge_pair : adjacencyList.at(i)) {
+                    int dest_id = edge_pair.first;
+                    double in_contrib = nodes.at(dest_id)->delta;
+                    visitContributeNeighbor(edge_pair.second, in_contrib, out_contrib);
+                }
+            }
+        }
+
+        visitContributeNode(i, out_contrib);
+    }
+}
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     visitContributeStart(nodeId); 
     if (contributions.count(nodeId)) {
@@ -312,15 +336,11 @@ void NeuralNetwork::visitContributeNode(int vId, double& outgoingContribution) {
 //      (this node's share of the error flowing back from the neighbor)
 //   2. Accumulates the weight gradient into c.delta
 //      (how much should this weight change? proportional to incomingContribution * this node's output)
-void NeuralNetwork::visitContributeNeighbor(Connection& c, double& incomingContribution, double& outgoingContribution) {
+void NeuralNetwork::visitContributeNeighbor(Connection& c, double& incoming_contribution, double& outgoing_contribution) {
     NodeInfo* v = nodes.at(c.source);
-    
-    if (v->postActivationValue == 0) {
-        std::cerr << "CRITICAL: Node " << c.source << " has 0 postActivationValue!" << std::endl;
-    }
-    outgoingContribution += c.weight * incomingContribution;
 
-    c.delta += incomingContribution * v->postActivationValue;
+    outgoing_contribution += c.weight * incoming_contribution;
+    c.delta += incoming_contribution * v->postActivationValue;
 }
 
 void NeuralNetwork::flush() {
