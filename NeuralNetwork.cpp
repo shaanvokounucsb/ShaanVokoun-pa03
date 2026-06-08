@@ -11,13 +11,21 @@ vector<int> NeuralNetwork::getInputNodeIds() const { return inputNodeIds; }
 vector<int> NeuralNetwork::getOutputNodeIds() const { return outputNodeIds; }
 
 vector<double> NeuralNetwork::predict(DataInstance instance) {
-    if (instance.x.size() != inputNodeIds.size()) return vector<double>();
+    cout << "DEBUG: Predict called. Input size: " << instance.x.size() << " vs expected: " << inputNodeIds.size() << endl;
+
+    if (instance.x.size() != inputNodeIds.size()) {
+        cout << "DEBUG: Input size mismatch, returning empty." << endl;
+        return vector<double>();
+    }
 
     for (size_t i = 0; i < inputNodeIds.size(); ++i) {
         nodes.at(inputNodeIds.at(i))->postActivationValue = instance.x.at(i);
     }
 
+    cout << "DEBUG: Number of layers to traverse: " << layers.size() << endl;
+    
     for (const auto& layer : layers) {
+
         for (int vId : layer) {
             for (auto const& [destId, conn] : adjacencyList.at(vId)) {
                 visitPredictNeighbor(conn); 
@@ -34,8 +42,11 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
             }
         }
     }
+
     vector<double> output;
     for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
+    
+    cout << "DEBUG: Prediction complete. Output size: " << output.size() << endl;
 
     if (evaluating) {
         flush(); 
