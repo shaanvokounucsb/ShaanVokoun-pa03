@@ -11,7 +11,6 @@ vector<int> NeuralNetwork::getInputNodeIds() const { return inputNodeIds; }
 vector<int> NeuralNetwork::getOutputNodeIds() const { return outputNodeIds; }
 
 vector<double> NeuralNetwork::predict(DataInstance instance) {
-
     if (instance.x.size() != inputNodeIds.size()) return vector<double>();
 
     for (size_t i = 0; i < inputNodeIds.size(); ++i) {
@@ -20,21 +19,23 @@ vector<double> NeuralNetwork::predict(DataInstance instance) {
 
     for (const auto& layer : layers) {
         for (int vId : layer) {
-            bool isInput = false;
-            for(int id : inputNodeIds) if(id == vId) isInput = true;
-
-            if (!isInput) {
-                visitPredictNode(vId); 
-            }
             for (auto const& [destId, conn] : adjacencyList.at(vId)) {
                 visitPredictNeighbor(conn); 
             }
         }
-    }
+        bool isInputLayer = false;
+        for(int id : layer) {
+            for(int inputId : inputNodeIds) if(id == inputId) isInputLayer = true;
+        }
 
+        if (!isInputLayer) {
+            for (int vId : layer) {
+                visitPredictNode(vId);
+            }
+        }
+    }
     vector<double> output;
     for (int id : outputNodeIds) output.push_back(nodes.at(id)->postActivationValue);
-
 
     if (evaluating) {
         flush(); 
@@ -64,12 +65,10 @@ double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     if (isOutput) {
         outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
     } else {
-        for (int i = 0; i < nodes.size(); ++i) {
-            if (adjacencyList.at(i).count(nodeId)) {
-                Connection& conn = adjacencyList.at(i).at(nodeId);
-                double incoming = contribute(i, y, p);
-                visitContributeNeighbor(conn, incoming, outgoingContribution);
-            }
+        for (auto const& [destId, conn] : adjacencyList.at(nodeId)) {
+
+            double incoming = contribute(destId, y, p); 
+            visitContributeNeighbor(conn, incoming, outgoingContribution);
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
@@ -178,14 +177,11 @@ void NeuralNetwork::loadNetwork(istream& in) {
             }
         }
 
-        // Crawl forward.
         previousLayer = currentLayer;
         layers.push_back(currentLayer);
     }
     in >> weightModifications; getline(in, junk);
     int v(0),u(0); double w(0), b(0);
-
-    // load weights by updating connections
     for (int i = 0; i < weightModifications; i++) {
         in >> v; in >> u; in >> w; getline(in , junk);
         updateConnection(v, u, w);
@@ -193,7 +189,6 @@ void NeuralNetwork::loadNetwork(istream& in) {
 
     in >> biasModifications; getline(in , junk);
 
-    // load biases by updating node info
     for (int i = 0; i < biasModifications; i++) {
         in >> v; in >> b; getline(in, junk);
         NodeInfo* thisNode = getNode(v);
