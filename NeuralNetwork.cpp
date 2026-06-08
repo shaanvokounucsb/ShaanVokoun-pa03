@@ -56,22 +56,28 @@ bool NeuralNetwork::contribute(double y, double p) {
 
 double NeuralNetwork::contribute(int nodeId, const double& y, const double& p) {
     visitContributeStart(nodeId); 
-    if (contributions.count(nodeId)) return contributions.at(nodeId); 
+    if (contributions.count(nodeId)) {
+        return contributions.at(nodeId); 
+    }
 
     double outgoingContribution = 0;
     bool isOutput = false;
     for(int id : outputNodeIds) { if(id == nodeId) isOutput = true; }
 
     if (isOutput) {
+
         outgoingContribution = -1 * ((y - p) / (p * (1 - p)));
     } else {
-        for (auto const& [destId, conn] : adjacencyList.at(nodeId)) {
+
+        for (auto& [destId, conn] : adjacencyList.at(nodeId)) {
 
             double incoming = contribute(destId, y, p); 
             visitContributeNeighbor(conn, incoming, outgoingContribution);
         }
     }
     visitContributeNode(nodeId, outgoingContribution);
+    
+    // Cache result
     contributions[nodeId] = outgoingContribution;
     return outgoingContribution;
 }
